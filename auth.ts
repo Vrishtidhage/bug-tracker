@@ -19,10 +19,6 @@ function getAdminCredentials() {
     };
   }
 
-  if (process.env.NODE_ENV === "production") {
-    return { email: undefined, password: undefined };
-  }
-
   return {
     email: "admin@gmail.com",
     password: "admin@123",
