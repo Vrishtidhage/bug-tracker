@@ -1,0 +1,194 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String        @id @default(cuid())
+  name           String
+  email          String        @unique
+  passwordHash   String?
+  avatarUrl      String?
+  workspaceRole  String        @default("TESTER")
+  emailVerified  DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  ownedProjects  Project[]      @relation("ProjectOwner")
+  memberships    ProjectMember[]
+  reportedBugs   Bug[]          @relation("ReportedBugs")
+  assignedBugs   Bug[]          @relation("AssignedBugs")
+  comments       BugComment[]
+  activities     BugActivity[]
+  notifications  Notification[]
+}
+
+model Project {
+  id          String          @id @default(cuid())
+  name        String
+  key         String          @unique
+  description String?
+  ownerId     String
+  owner       User            @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  members     ProjectMember[]
+  bugs        Bug[]
+  labels      Label[]
+  releases    Release[]
+}
+
+model ProjectMember {
+  id        String      @id @default(cuid())
+  userId    String
+  projectId String
+  role      String      @default("TESTER")
+  joinedAt  DateTime    @default(now())
+
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project   Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, projectId])
+  @@index([projectId])
+}
+
+model Bug {
+  id              String         @id @default(cuid())
+  bugKey          String         @unique
+  title           String
+  description     String
+  stepsToReproduce String
+  expectedResult  String
+  actualResult    String
+  module          String
+  browser         String?
+  operatingSystem String?
+  device          String?
+  appVersion      String?
+  environment     String         @default("STAGING")
+  status          String         @default("OPEN")
+  priority        String         @default("MEDIUM")
+  severity        String         @default("MAJOR")
+  slaDueAt        DateTime?
+  closedAt        DateTime?
+  projectId       String
+  reporterId      String
+  assigneeId      String?
+  releaseId       String?
+  duplicateOfId   String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  project         Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  reporter        User           @relation("ReportedBugs", fields: [reporterId], references: [id], onDelete: Restrict)
+  assignee        User?          @relation("AssignedBugs", fields: [assigneeId], references: [id], onDelete: SetNull)
+  release         Release?       @relation(fields: [releaseId], references: [id], onDelete: SetNull)
+  duplicateOf     Bug?           @relation("DuplicateBugs", fields: [duplicateOfId], references: [id], onDelete: SetNull)
+  duplicates      Bug[]          @relation("DuplicateBugs")
+  comments        BugComment[]
+  attachments     BugAttachment[]
+  activities      BugActivity[]
+  labels          BugLabel[]
+
+  @@index([projectId, status])
+  @@index([assigneeId])
+  @@index([priority])
+}
+
+model BugComment {
+  id        String   @id @default(cuid())
+  body      String
+  bugId     String
+  authorId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bug       Bug      @relation(fields: [bugId], references: [id], onDelete: Cascade)
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([bugId])
+}
+
+model BugAttachment {
+  id        String   @id @default(cuid())
+  fileName  String
+  fileUrl   String
+  fileType  String
+  bugId     String
+  createdAt DateTime @default(now())
+
+  bug       Bug      @relation(fields: [bugId], references: [id], onDelete: Cascade)
+
+  @@index([bugId])
+}
+
+model BugActivity {
+  id        String         @id @default(cuid())
+  action    String
+  details   Json?
+  bugId     String
+  actorId   String
+  createdAt DateTime       @default(now())
+
+  bug       Bug            @relation(fields: [bugId], references: [id], onDelete: Cascade)
+  actor     User           @relation(fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([bugId])
+}
+
+model Label {
+  id        String     @id @default(cuid())
+  name      String
+  color     String
+  projectId String
+
+  project   Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  bugs      BugLabel[]
+
+  @@unique([name, projectId])
+}
+
+model BugLabel {
+  bugId   String
+  labelId String
+
+  bug     Bug    @relation(fields: [bugId], references: [id], onDelete: Cascade)
+  label   Label  @relation(fields: [labelId], references: [id], onDelete: Cascade)
+
+  @@id([bugId, labelId])
+}
+
+model Release {
+  id          String    @id @default(cuid())
+  version     String
+  title       String
+  targetDate  DateTime?
+  projectId   String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  bugs        Bug[]
+
+  @@unique([version, projectId])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  type      String
+  title     String
+  body      String
+  readAt    DateTime?
+  userId    String
+  createdAt DateTime         @default(now())
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+}
