@@ -24,8 +24,8 @@ function getAdminCredentials() {
   }
 
   return {
-    email: "vrishtidhage@gmail.com",
-    password: "Vrishti@21",
+    email: "admin@gmail.com",
+    password: "admin@123",
   };
 }
 

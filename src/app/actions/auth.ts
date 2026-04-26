@@ -12,7 +12,7 @@ function encodeMessage(message: string) {
 }
 
 function configuredAdminEmail() {
-  return (process.env.ADMIN_EMAIL ?? "vrishtidhage@gmail.com").toLowerCase();
+  return (process.env.ADMIN_EMAIL ?? "admin@gmail.com").toLowerCase();
 }
 
 export async function loginAction(formData: FormData) {
