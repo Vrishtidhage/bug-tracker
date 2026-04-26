@@ -37,8 +37,5 @@ export const authConfig = {
     },
   },
   providers: [],
-  trustHost: [
-    "https://bug-tracker-1-4p8r.onrender.com",
-    "https://localhost:10000",
-  ],
+  trustHost: true,
 } satisfies NextAuthConfig;
